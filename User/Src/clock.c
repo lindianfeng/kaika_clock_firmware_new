@@ -235,7 +235,7 @@ static State clock_states[3] = {
 	{
 		.state = STATE_CLOCK_DATE,
 		.repeat = 1,
-		.duration = 2000,
+		.duration = 3000,
 		.callback = Clock_ShowDate
 	},
 	{
