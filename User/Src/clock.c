@@ -262,13 +262,13 @@ static State time_states[4] = {
 	{
 		.state = STATE_TIME_SEC_JUMP_UP,
 		.repeat = 2,
-		.duration = 100,
+		.duration = 98,
 		.callback = Clock_SecondJumpUp
 	},
 	{
 		.state = STATE_TIME_SEC_JUMP_DOWN,
 		.repeat = 2,
-		.duration = 100,
+		.duration = 98,
 		.callback = Clock_SecondJumpDown
 	}
 };
@@ -383,6 +383,8 @@ void StartMainTask(void const *argument) {
 				break;
 			}
 
+	    Clock_UpdateDiplay();
+
 			vTaskDelay(time_s.duration);
 
 			break;
@@ -394,12 +396,12 @@ void StartMainTask(void const *argument) {
 				Clock_ShowTime();
 			}
 
+	    Clock_UpdateDiplay();
+
 			vTaskDelay(clock_s.duration);
 
 			break;
 		}
-
-		Clock_UpdateDiplay();
 	}
 }
 
