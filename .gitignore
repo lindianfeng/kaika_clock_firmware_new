@@ -10,3 +10,4 @@
 .project
 *.launch
 *.cfg
+*_FLASH.ld
