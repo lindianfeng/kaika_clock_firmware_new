@@ -403,7 +403,8 @@ void StartMainTask(void const *argument) {
 			break;
 		}
 
-		DWT_Delay(10);
+		DWT_DelayUs(10);
+		DWT_DelayMs(1);
 	}
 }
 

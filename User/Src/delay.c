@@ -34,11 +34,15 @@ uint32_t DWT_Init(void) {
 	return (DWT->CYCCNT) ? 0 : 1;
 }
 
-void DWT_Delay(volatile uint32_t us) {
+void DWT_DelayUs(volatile uint32_t us) {
 	volatile uint32_t startTick = DWT_GetCycles();
 	volatile uint32_t delayTicks = us * (SystemCoreClock / 1000000);
 
 	while (DWT_GetCycles() - startTick < delayTicks)
 		;
+}
+
+void DWT_DelayMs(uint32_t ms) {
+	DWT_DelayUs(1000 * ms);
 }
 

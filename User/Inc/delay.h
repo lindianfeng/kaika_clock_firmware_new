@@ -13,7 +13,8 @@
 #include <stdint.h>
 
 uint32_t DWT_Init(void);
-void DWT_Delay(uint32_t us);
+void DWT_DelayUs(uint32_t us);
+void DWT_DelayMs(uint32_t ms);
 
 static inline uint32_t DWT_MaxSec(void) {
 	return (UINT32_MAX / SystemCoreClock);
