@@ -19,7 +19,7 @@ uint32_t DWT_Init(void) {
 	/* Enable  clock cycle counter */
 	DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 
-	for (int i = 0; i < 5; ++i) {
+	for (int i = 0; i < 4; ++i) {
 		__NOP();
 	}
 
@@ -33,9 +33,5 @@ void DWT_DelayUs(volatile uint32_t us) {
 
 	while (DWT_GetCycles() - startTick < delayTicks)
 		;
-}
-
-void DWT_DelayMs(uint32_t ms) {
-	DWT_DelayUs(1000 * ms);
 }
 
