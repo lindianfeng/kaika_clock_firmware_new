@@ -14,7 +14,7 @@
 #include "main.h"
 #include "FreeRTOS.h"
 #include "cmsis_os.h"
-#include "task.h"
+#include "delay.h"
 
 extern RTC_Data rtc;
 
@@ -383,6 +383,8 @@ void StartMainTask(void const *argument) {
 				break;
 			}
 
+			Clock_UpdateDiplay();
+
 			vTaskDelay(time_s.duration);
 
 			break;
@@ -394,12 +396,14 @@ void StartMainTask(void const *argument) {
 				Clock_ShowTime();
 			}
 
+			Clock_UpdateDiplay();
+
 			vTaskDelay(clock_s.duration);
 
 			break;
 		}
 
-		Clock_UpdateDiplay();
+		DWT_Delay(10);
 	}
 }
 
@@ -410,6 +414,7 @@ int main(void) {
 	MX_I2C1_Init();
 	MX_SPI1_Init();
 	MX_ADC1_Init();
+	DWT_Init();
 	Clock_Init();
 
 	MX_FREERTOS_Init();

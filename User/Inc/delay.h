@@ -8,16 +8,27 @@
 #ifndef DELAY_H_
 #define DELAY_H_
 
- #include "stm32f1xx_hal.h"
+#include "stm32f1xx.h"
+#include <stdbool.h>
+#include <stdint.h>
 
-void delay_us(uint32_t us)
-{
-    uint32_t delay = (HAL_RCC_GetHCLKFreq() / 4000000 * us);
-    while (delay--)
-  {
-    ;
-  }
+uint32_t DWT_Init(void);
+void DWT_Delay(uint32_t us);
+
+static inline uint32_t DWT_MaxSec(void) {
+	return (UINT32_MAX / SystemCoreClock);
 }
 
+static inline uint32_t DWT_MaxMsec(void) {
+	return (UINT32_MAX / (SystemCoreClock / 1000));
+}
+
+static inline uint32_t DWT_MaxUsec(void) {
+	return (UINT32_MAX / (SystemCoreClock / 1000000));
+}
+
+static inline uint32_t DWT_GetCycles(void) {
+	return (DWT->CYCCNT);
+}
 
 #endif /* DELAY_H_ */
