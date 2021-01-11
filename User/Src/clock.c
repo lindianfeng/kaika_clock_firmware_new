@@ -235,7 +235,7 @@ static State clock_states[3] = {
 	{
 		.state = STATE_CLOCK_DATE,
 		.repeat = 1,
-		.duration = 2000,
+		.duration = 3000,
 		.callback = Clock_ShowDate
 	},
 	{
@@ -262,13 +262,13 @@ static State time_states[4] = {
 	{
 		.state = STATE_TIME_SEC_JUMP_UP,
 		.repeat = 2,
-		.duration = 100,
+		.duration = 98,
 		.callback = Clock_SecondJumpUp
 	},
 	{
 		.state = STATE_TIME_SEC_JUMP_DOWN,
 		.repeat = 2,
-		.duration = 100,
+		.duration = 98,
 		.callback = Clock_SecondJumpDown
 	}
 };
@@ -405,6 +405,7 @@ void StartMainTask(void const *argument) {
 
 		DWT_DelayUs(10);
 		DWT_DelayMs(1);
+
 	}
 }
 
