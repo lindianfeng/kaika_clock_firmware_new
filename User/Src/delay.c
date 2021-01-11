@@ -8,13 +8,6 @@
 #include "delay.h"
 #include "stm32f1xx_hal.h"
 
-//void delay_us(uint32_t us) {
-//	uint32_t delay = (HAL_RCC_GetHCLKFreq() / 4000000 * us);
-//	while (delay--) {
-//		;
-//	}
-//}
-
 uint32_t DWT_Init(void) {
 	if (!(CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk)) {
 		CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
@@ -26,9 +19,9 @@ uint32_t DWT_Init(void) {
 	/* Enable  clock cycle counter */
 	DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 
-	__NOP();
-	__NOP();
-	__NOP();
+	for (int i = 0; i < 5; ++i) {
+		__NOP();
+	}
 
 	/* Check if clock cycle counter has started */
 	return (DWT->CYCCNT) ? 0 : 1;

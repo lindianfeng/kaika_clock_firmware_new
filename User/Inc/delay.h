@@ -9,7 +9,6 @@
 #define DELAY_H_
 
 #include "stm32f1xx.h"
-#include <stdbool.h>
 #include <stdint.h>
 
 uint32_t DWT_Init(void);
