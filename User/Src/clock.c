@@ -446,9 +446,9 @@ void StartMainTask(void const *argument) {
 	clock_s = clock_states[0];
 
 	for (;;) {
-		if (!IsInShowTimeState(&clock_s) && TestAndClearFlag(CLOCK_FLAG_TIME_SECOND_CHANGED)) {
+		if (IsInShowTimeState(&clock_s) && TestAndClearFlag(CLOCK_FLAG_TIME_SECOND_CHANGED)) {
 			ChangeClockState(&clock_s, STATE_CLOCK_TIME_SEC_CHANGED);
-		} else if (IsInShowTimeState(&clock_s) && TestAndClearFlag(CLOCK_FLAG_SHOW_DATE)) {
+		} else if (!IsInShowTimeState(&clock_s) && TestAndClearFlag(CLOCK_FLAG_SHOW_DATE)) {
 			ChangeClockState(&clock_s, STATE_CLOCK_DATE);
 		}
 
