@@ -43,7 +43,7 @@ void MAX72XX_Init(void) {
 
   MAX72XX_ControlAll(TEST, OFF);                   // no test
   MAX72XX_ControlAll(SCANLIMIT, ROW_SIZE - 1);       // scan limit is set to max on startup
-  MAX72XX_ControlAll(INTENSITY, MAX_INTENSITY / 2);  // set intensity to a reasonable value
+  MAX72XX_ControlAll(INTENSITY, MAX_INTENSITY / 2 - 2);  // set intensity to a reasonable value
   MAX72XX_ControlAll(DECODE, OFF);                 // ensure no decoding (warm boot potential issue)
   MAX72XX_ClearAll();
   MAX72XX_ControlAll(SHUTDOWN, OFF);               // take the modules out of shutdown mode
