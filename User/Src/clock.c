@@ -429,7 +429,7 @@ void CallbackTogglePoint(void const *argument) {
 	Clock_SetRunLed(TestClockFlag(CLOCK_FLAG_FLASH_POINT));
 }
 
-static inline bool CanChangeState(ClockState *s) {
+static inline bool IsInShowTimeState(ClockState *s) {
 	if (s->state == STATE_CLOCK_DATE || s->state == STATE_CLOCK_TEMP) {
 		return false;
 	}
@@ -446,12 +446,10 @@ void StartMainTask(void const *argument) {
 	clock_s = clock_states[0];
 
 	for (;;) {
-		if (CanChangeState(&clock_s)) {
-			if (TestAndClearFlag(CLOCK_FLAG_TIME_SECOND_CHANGED)) {
-				ChangeClockState(&clock_s, STATE_CLOCK_TIME_SEC_CHANGED);
-			} else if (TestAndClearFlag(CLOCK_FLAG_SHOW_DATE)) {
-				ChangeClockState(&clock_s, STATE_CLOCK_DATE);
-			}
+		if (!IsInShowTimeState(&clock_s) && TestAndClearFlag(CLOCK_FLAG_TIME_SECOND_CHANGED)) {
+			ChangeClockState(&clock_s, STATE_CLOCK_TIME_SEC_CHANGED);
+		} else if (IsInShowTimeState(&clock_s) && TestAndClearFlag(CLOCK_FLAG_SHOW_DATE)) {
+			ChangeClockState(&clock_s, STATE_CLOCK_DATE);
 		}
 
 		TickState(&clock_s);
