@@ -16,6 +16,7 @@
 #include "FreeRTOS.h"
 #include "cmsis_os.h"
 #include "delay.h"
+#include "utils.h"
 
 extern RTC_Data rtc;
 
@@ -29,11 +30,10 @@ extern osTimerId showDateTimerHandle;
 extern void SystemClock_Config(void);
 extern void MX_FREERTOS_Init(void);
 
-static uint8_t need_flash_point = 1;
-static uint8_t need_update_display = 1;
-
 static uint8_t t = 0;
 static uint8_t h = 0;
+
+static uint32_t volatile clock_flag = 0;
 
 #define POINT_COL_NUM 11
 
@@ -76,13 +76,33 @@ static const uint8_t signs[][8] = {
 	{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }
 };
 
-static void SetDisplayFlag(void) {
-	need_update_display = 1;
+enum {
+	CLOCK_FLAG_REFRESH_DISPLAY = 1,
+	CLOCK_FLAG_TIME_SECOND_CHANGED = 2,
+	CLOCK_FLAG_SHOW_DATE = 3,
+	CLOCK_FLAG_SHOW_TEMP = 4,
+	CLOCK_FLAG_FLASH_POINT = 5,
+};
+
+static inline void SetClockFlag(uint32_t bit) {
+	bitSet(clock_flag, bit);
 }
 
-static bool TestDisplayFlag(void) {
-	if (need_update_display) {
-		need_update_display = 0;
+static inline void ClearClockFlag(uint32_t bit) {
+	bitClear(clock_flag, bit);
+}
+
+static inline void FlipClockFlag(uint32_t bit) {
+	bitFlip(clock_flag, bit);
+}
+
+static inline bool TestClockFlag(uint32_t bit) {
+	return bitRead(clock_flag, bit);
+}
+
+static bool TestAndClearFlag(uint32_t bit) {
+	if (bitRead(clock_flag, bit)) {
+		bitClear(clock_flag, bit);
 		return true;
 	}
 
@@ -207,6 +227,7 @@ static void Clock_Init(void) {
 }
 
 static void Clock_FlashTimePoint() {
+	const bool need_flash_point = TestClockFlag(CLOCK_FLAG_FLASH_POINT);
 	MAX72XX_SetPoint(1, POINT_COL_NUM, need_flash_point);
 	MAX72XX_SetPoint(2, POINT_COL_NUM, need_flash_point);
 	MAX72XX_SetPoint(5, POINT_COL_NUM, need_flash_point);
@@ -216,33 +237,33 @@ static void Clock_FlashTimePoint() {
 static void Clock_ShowTime() {
 	led_display_time(rtc.Hour, rtc.Min, rtc.Sec);
 	Clock_FlashTimePoint();
-	SetDisplayFlag();
+	SetClockFlag(CLOCK_FLAG_REFRESH_DISPLAY);
 }
 
 static void Clock_ShowDate(void) {
 	led_display_date(rtc.Month, rtc.Day, rtc.DaysOfWeek);
-	SetDisplayFlag();
+	SetClockFlag(CLOCK_FLAG_REFRESH_DISPLAY);
 }
 
 static void Clock_ShowTemp(void) {
 	led_display_temp(t, h);
-	SetDisplayFlag();
+	SetClockFlag(CLOCK_FLAG_REFRESH_DISPLAY);
 }
 
 static void Clock_SecondJumpUp(void) {
 	Clock_FlashTimePoint();
 	MAX72XX_TransformOne(3, TSU);
-	SetDisplayFlag();
+	SetClockFlag(CLOCK_FLAG_REFRESH_DISPLAY);
 }
 
 static void Clock_SecondJumpDown(void) {
 	Clock_FlashTimePoint();
 	MAX72XX_TransformOne(3, TSD);
-	SetDisplayFlag();
+	SetClockFlag(CLOCK_FLAG_REFRESH_DISPLAY);
 }
 
 static void Clock_UpdateDiplay() {
-	if (TestDisplayFlag()) {
+	if (TestAndClearFlag(CLOCK_FLAG_REFRESH_DISPLAY)) {
 		MAX72XX_UpdateAll();
 	}
 }
@@ -301,59 +322,78 @@ enum {
 
 typedef struct {
 	uint32_t state;
+	uint32_t next_state;
 	int32_t repeat;
 	uint32_t duration;
 	void (*callback)(void);
+	bool change_state;
 } ClockState;
 
-static ClockState clock_states[6] = {
+static ClockState clock_states[] = {
 	{
 		.state = STATE_CLOCK_TIME_SHOW,
+		.next_state = STATE_CLOCK_NONE,
 		.repeat = -1,
 		.duration = 10,
-		.callback = Clock_ShowTime
+		.callback = Clock_ShowTime,
+		.change_state = 0
 	},
 	{
 		.state = STATE_CLOCK_TIME_SEC_CHANGED,
-		.repeat = 0,
+		.next_state = STATE_CLOCK_TIME_SEC_JUMP_UP,
+		.repeat = 1,
 		.duration = 0,
-		.callback = 0
+		.callback = Clock_ShowTime,
+		.change_state = 0
 	},
 	{
 		.state = STATE_CLOCK_TIME_SEC_JUMP_UP,
+		.next_state = STATE_CLOCK_TIME_SEC_JUMP_DOWN,
 		.repeat = 2,
 		.duration = 98,
-		.callback = Clock_SecondJumpUp
+		.callback = Clock_SecondJumpUp,
+		.change_state = 0
 	},
 	{
 		.state = STATE_CLOCK_TIME_SEC_JUMP_DOWN,
+		.next_state = STATE_CLOCK_TIME_SHOW,
 		.repeat = 2,
 		.duration = 98,
-		.callback = Clock_SecondJumpDown
+		.callback = Clock_SecondJumpDown,
+		.change_state = 0
 	},
 	{
 		.state = STATE_CLOCK_DATE,
+		.next_state = STATE_CLOCK_TEMP,
 		.repeat = 1,
 		.duration = 2500,
-		.callback = Clock_ShowDate
+		.callback = Clock_ShowDate,
+		.change_state = 0
 	},
 	{
 		.state = STATE_CLOCK_TEMP,
+		.next_state = STATE_CLOCK_TIME_SHOW,
 		.repeat = 1,
 		.duration = 2500,
-		.callback = Clock_ShowTemp
+		.callback = Clock_ShowTemp,
+		.change_state = 0
 	}
 };
 
 static ClockState clock_s = { 0 };
 
-static inline void ChangeClockState(ClockState *s,int clock_state_n) {
+static inline void ChangeClockState(ClockState *s, int clock_state_n) {
+	if (STATE_CLOCK_NONE == clock_state_n) {
+		return;
+	}
+
 	*s = clock_states[clock_state_n];
 }
 
-static inline void TickState(ClockState *s, int clock_state_n) {
-	if (s->repeat == 0 && clock_state_n != STATE_CLOCK_NONE) {
-		ChangeClockState(s,clock_state_n);
+static inline void TickState(ClockState *s) {
+	if (!s->repeat) {
+		s->change_state = 1;
+		return;
 	}
 
 	if (s->callback) {
@@ -362,26 +402,38 @@ static inline void TickState(ClockState *s, int clock_state_n) {
 
 	if (s->repeat != -1) {
 		s->repeat--;
+
+		if (!s->repeat) {
+			s->change_state = 1;
+		}
 	}
 }
 
 void CallbackGetRTC(void const *argument) {
 	if (Clock_UpdateRTC()) {
-		ChangeClockState(&clock_s,STATE_CLOCK_TIME_SEC_CHANGED);
+		SetClockFlag(CLOCK_FLAG_TIME_SECOND_CHANGED);
 	}
 }
 
 void CallbackGetSensorData(void const *argument) {
 	DHT11_ReadData(&t, &h);
+	SetClockFlag(CLOCK_FLAG_SHOW_TEMP);
 }
 
 void CallbackShowDate(void const *argument) {
-	ChangeClockState(&clock_s,STATE_CLOCK_DATE);
+	SetClockFlag(CLOCK_FLAG_SHOW_DATE);
 }
 
 void CallbackTogglePoint(void const *argument) {
-	need_flash_point = !need_flash_point;
-	Clock_SetRunLed(need_flash_point);
+	FlipClockFlag(CLOCK_FLAG_FLASH_POINT);
+	Clock_SetRunLed(TestClockFlag(CLOCK_FLAG_FLASH_POINT));
+}
+
+static inline bool CanChangeState(ClockState *s) {
+	if (s->state == STATE_CLOCK_DATE || s->state == STATE_CLOCK_TEMP) {
+		return false;
+	}
+	return true;
 }
 
 void StartMainTask(void const *argument) {
@@ -394,30 +446,23 @@ void StartMainTask(void const *argument) {
 	clock_s = clock_states[0];
 
 	for (;;) {
-		switch (clock_s.state) {
-		case STATE_CLOCK_TIME_SHOW:
-			TickState(&clock_s, STATE_CLOCK_NONE);
-			break;
-		case STATE_CLOCK_TIME_SEC_CHANGED:
-			TickState(&clock_s, STATE_CLOCK_TIME_SEC_JUMP_UP);
-			break;
-		case STATE_CLOCK_TIME_SEC_JUMP_UP:
-			TickState(&clock_s, STATE_CLOCK_TIME_SEC_JUMP_DOWN);
-			break;
-		case STATE_CLOCK_TIME_SEC_JUMP_DOWN:
-			TickState(&clock_s, STATE_CLOCK_TIME_SHOW);
-			break;
-		case STATE_CLOCK_DATE:
-			TickState(&clock_s, STATE_CLOCK_TEMP);
-			break;
-		case STATE_CLOCK_TEMP:
-			TickState(&clock_s, STATE_CLOCK_TIME_SHOW);
-			break;
+		if (CanChangeState(&clock_s)) {
+			if (TestAndClearFlag(CLOCK_FLAG_TIME_SECOND_CHANGED)) {
+				ChangeClockState(&clock_s, STATE_CLOCK_TIME_SEC_CHANGED);
+			} else if (TestAndClearFlag(CLOCK_FLAG_SHOW_DATE)) {
+				ChangeClockState(&clock_s, STATE_CLOCK_DATE);
+			}
 		}
+
+		TickState(&clock_s);
 
 		Clock_UpdateDiplay();
 
 		vTaskDelay(clock_s.duration);
+
+		if (clock_s.change_state) {
+			ChangeClockState(&clock_s, clock_s.next_state);
+		}
 	}
 }
 

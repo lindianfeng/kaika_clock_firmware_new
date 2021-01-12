@@ -14,6 +14,7 @@
 #define bitSet(value, bit) ((value) |= (1UL << (bit)))
 #define bitClear(value, bit) ((value) &= ~(1UL << (bit)))
 #define bitWrite(value, bit, bitvalue) (bitvalue ? bitSet(value, bit) : bitClear(value, bit))
+#define bitFlip(value,bit) ((value) ^= (1UL << (bit)))
 
 
 #endif /* UTILS_H_ */
