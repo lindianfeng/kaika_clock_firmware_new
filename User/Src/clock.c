@@ -347,13 +347,13 @@ static ClockState clock_states[6] = {
 
 static ClockState clock_s = { 0 };
 
-static inline void ChangeClockState(int clock_state_n) {
-	clock_s = clock_states[clock_state_n];
+static inline void ChangeClockState(ClockState *s,int clock_state_n) {
+	*s = clock_states[clock_state_n];
 }
 
 static inline void TickState(ClockState *s, int clock_state_n) {
 	if (s->repeat == 0 && clock_state_n != STATE_CLOCK_NONE) {
-		*s = clock_states[clock_state_n];
+		ChangeClockState(s,clock_state_n);
 	}
 
 	if (s->callback) {
@@ -367,7 +367,7 @@ static inline void TickState(ClockState *s, int clock_state_n) {
 
 void CallbackGetRTC(void const *argument) {
 	if (Clock_UpdateRTC()) {
-		ChangeClockState(STATE_CLOCK_TIME_SEC_CHANGED);
+		ChangeClockState(&clock_s,STATE_CLOCK_TIME_SEC_CHANGED);
 	}
 }
 
@@ -376,7 +376,7 @@ void CallbackGetSensorData(void const *argument) {
 }
 
 void CallbackShowDate(void const *argument) {
-	ChangeClockState(STATE_CLOCK_DATE);
+	ChangeClockState(&clock_s,STATE_CLOCK_DATE);
 }
 
 void CallbackTogglePoint(void const *argument) {
@@ -385,6 +385,8 @@ void CallbackTogglePoint(void const *argument) {
 }
 
 void StartMainTask(void const *argument) {
+	Clock_Init();
+
 	Clock_ShowWelcome();
 
 	DHT11_Init();
@@ -427,7 +429,6 @@ int main(void) {
 	MX_SPI1_Init();
 	MX_ADC1_Init();
 	DWT_Init();
-	Clock_Init();
 
 	MX_FREERTOS_Init();
 
