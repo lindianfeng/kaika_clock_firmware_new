@@ -366,7 +366,7 @@ static ClockState clock_states[] = {
 		.state = STATE_CLOCK_DATE,
 		.next_state = STATE_CLOCK_TEMP,
 		.repeat = 1,
-		.duration = 2500,
+		.duration = 2000,
 		.callback = Clock_ShowDate,
 		.change_state = 0
 	},
@@ -374,7 +374,7 @@ static ClockState clock_states[] = {
 		.state = STATE_CLOCK_TEMP,
 		.next_state = STATE_CLOCK_TIME_SHOW,
 		.repeat = 1,
-		.duration = 2500,
+		.duration = 2000,
 		.callback = Clock_ShowTemp,
 		.change_state = 0
 	}
@@ -429,11 +429,11 @@ void CallbackTogglePoint(void const *argument) {
 	Clock_SetRunLed(TestClockFlag(CLOCK_FLAG_FLASH_POINT));
 }
 
-static inline bool IsInShowTimeState(ClockState *s) {
+static inline bool IsNotInShowTimeState(ClockState *s) {
 	if (s->state == STATE_CLOCK_DATE || s->state == STATE_CLOCK_TEMP) {
-		return false;
+		return true;
 	}
-	return true;
+	return false;
 }
 
 void StartMainTask(void const *argument) {
@@ -446,9 +446,9 @@ void StartMainTask(void const *argument) {
 	clock_s = clock_states[0];
 
 	for (;;) {
-		if (IsInShowTimeState(&clock_s) && TestAndClearFlag(CLOCK_FLAG_TIME_SECOND_CHANGED)) {
+		if (!IsNotInShowTimeState(&clock_s) && TestAndClearFlag(CLOCK_FLAG_TIME_SECOND_CHANGED)) {
 			ChangeClockState(&clock_s, STATE_CLOCK_TIME_SEC_CHANGED);
-		} else if (!IsInShowTimeState(&clock_s) && TestAndClearFlag(CLOCK_FLAG_SHOW_DATE)) {
+		} else if (TestAndClearFlag(CLOCK_FLAG_SHOW_DATE)) {
 			ChangeClockState(&clock_s, STATE_CLOCK_DATE);
 		}
 
