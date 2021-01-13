@@ -30,8 +30,9 @@ extern osTimerId showDateTimerHandle;
 extern void SystemClock_Config(void);
 extern void MX_FREERTOS_Init(void);
 
-static uint8_t t = 0;
-static uint8_t h = 0;
+static uint8_t temp_int = 0;
+static uint8_t temp_deci = 0;
+static uint8_t humi_int = 0;
 
 static uint32_t volatile clock_flag = 0;
 
@@ -177,12 +178,15 @@ void led_display_date(uint8_t month, uint8_t day_of_month, uint8_t dayofweek) {
 	}
 }
 
-void led_display_temp(uint8_t temp_int, uint8_t temp_decimals) {
+void led_display_temp_and_humi(uint8_t temp_int, uint8_t temp_decimals, uint8_t humidity) {
 	const uint8_t temp_int_1st = temp_int / 10;
 	const uint8_t temp_int_2nd = temp_int % 10;
 
 	const uint8_t temp_decimals_1st = temp_decimals / 10;
-	const uint8_t temp_decimals_2nd = temp_decimals % 10;
+
+
+	const uint8_t humidity_1st = humidity / 10;
+	const uint8_t humidity_2nd = humidity % 10;
 
 	MAX72XX_ClearAll();
 
@@ -191,22 +195,27 @@ void led_display_temp(uint8_t temp_int, uint8_t temp_decimals) {
 			uint8_t data = 0;
 			switch (dev) {
 			case 0:
-				data = numbers_5x8[temp_int_1st][row] << 2 | numbers_5x8[temp_int_2nd][row] << 7;
+				data = numbers_5x8[temp_int_1st][row] | numbers_5x8[temp_int_2nd][row] << 5;
 				break;
 			case 1:
-				data = numbers_5x8[temp_int_2nd][row] >> 1 | signs[5][row] << 6;
+				data = numbers_5x8[temp_int_2nd][row] >> 3 | signs[5][row] << 3 | numbers_3x5[temp_decimals_1st][row] << 5;
 				break;
 			case 2:
-				data = numbers_5x8[temp_decimals_1st][row] << 1 | numbers_5x8[temp_decimals_2nd][row] << 6;
+				data = numbers_5x8[humidity_1st][row] << 6;
 				break;
 			case 3:
-				data = numbers_5x8[temp_decimals_2nd][row] >> 2;
+				data = (numbers_5x8[humidity_1st][row]) >> 2 | ((numbers_5x8[humidity_2nd][row]) << 3);
 				break;
 
 			}
 			MAX72XX_SetRowOne(dev, row, data);
 		}
 	}
+}
+
+static void Clock_Init(void) {
+	DS3231_Init();
+	MAX72XX_Init();
 }
 
 static bool Clock_UpdateRTC(void) {
@@ -219,11 +228,6 @@ static bool Clock_UpdateRTC(void) {
 	}
 
 	return false;
-}
-
-static void Clock_Init(void) {
-	DS3231_Init();
-	MAX72XX_Init();
 }
 
 static void Clock_FlashTimePoint() {
@@ -246,7 +250,7 @@ static void Clock_ShowDate(void) {
 }
 
 static void Clock_ShowTemp(void) {
-	led_display_temp(t, h);
+	led_display_temp_and_humi(temp_int, temp_deci, humi_int);
 	SetClockFlag(CLOCK_FLAG_REFRESH_DISPLAY);
 }
 
@@ -416,7 +420,7 @@ void CallbackGetRTC(void const *argument) {
 }
 
 void CallbackGetSensorData(void const *argument) {
-	DHT11_ReadData(&t, &h);
+	DHT11_ReadData(&temp_int, &temp_deci, &humi_int);
 	SetClockFlag(CLOCK_FLAG_SHOW_TEMP);
 }
 
