@@ -49,28 +49,26 @@ static inline void DHT11_Rst(void) {
 //返回0:存在
 static inline uint8_t DHT11_Check(void) {
 	uint8_t retry = 0;
-	DHT11_Mode_IN_NP();
-	while (DHT11_IN && retry < 100) {
-		//DHT11会拉低40~80us
+	DHT11_Mode_IN_NP();       //SET INPUT
+	while (DHT11_IN && retry < 100)       //DHT11 Pull down 40~80us
+	{
 		retry++;
 		DWT_DelayUs(1);
 	}
 
-	if (retry >= 100) {
+	if (retry >= 100)
 		return 1;
-	}
 
 	retry = 0;
 
-	while (!DHT11_IN && retry < 100) {
-		//DHT11拉低后会再次拉高40~80us
+	while (!DHT11_IN && retry < 100)       //DHT11 Pull up 40~80us
+	{
 		retry++;
 		DWT_DelayUs(1);
 	}
 
-	if (retry >= 100) {
-		return 1;
-	}
+	if (retry >= 100)
+		return 1;       //chack error
 
 	return 0;
 }
@@ -79,22 +77,21 @@ static inline uint8_t DHT11_Check(void) {
 //返回值：1/0
 static inline uint8_t DHT11_ReadBit(void) {
 	uint8_t retry = 0;
-
-	while (DHT11_IN && retry < 100) {
-		//等待变高电平
+	while (DHT11_IN && retry < 100)       //wait become Low level
+	{
 		retry++;
 		DWT_DelayUs(1);
 	}
 
 	retry = 0;
 
-	while (!DHT11_IN && retry < 100) {
-		//等待变高电平
+	while (!DHT11_IN && retry < 100)       //wait become High level
+	{
 		retry++;
 		DWT_DelayUs(1);
 	}
 
-	DWT_DelayUs(40);       //等待40us
+	DWT_DelayUs(40);       //wait 40us
 
 	return DHT11_IN == GPIO_PIN_RESET ? 0 : 1;
 }
@@ -102,12 +99,14 @@ static inline uint8_t DHT11_ReadBit(void) {
 //从DHT11读取一个字节
 //返回值：读到的数据
 static inline uint8_t DHT11_ReadByte(void) {
-	uint8_t dat = 0;
-	for (int i = 0; i < 8; i++) {
-		dat <<= 1;
-		dat |= DHT11_ReadBit();
-	}
-	return dat;
+	uint8_t i,dat;
+    dat=0;
+	for (i=0;i<8;i++)
+	{
+   		dat<<=1;
+	    dat|=DHT11_ReadBit();
+    }
+    return dat;
 }
 
 //从DHT11读取一次数据
@@ -115,7 +114,7 @@ static inline uint8_t DHT11_ReadByte(void) {
 //humi:湿度值(范围:20%~90%)
 //返回值：0,正常;1,读取失败
 uint8_t DHT11_ReadData(uint8_t *temp_int, uint8_t *temp_deci, uint8_t *humi_int) {
-	uint8_t buf[5] = { 0, 0, 0, 0, 0 };
+	uint8_t buf[5] = {0};
 
 	DHT11_Rst();
 
