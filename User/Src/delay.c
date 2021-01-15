@@ -8,6 +8,13 @@
 #include "delay.h"
 #include "stm32f1xx_hal.h"
 
+//void delay_us(uint32_t us) {
+//	uint32_t delay = (HAL_RCC_GetHCLKFreq() / 4000000 * us);
+//	while (delay--) {
+//		;
+//	}
+//}
+
 uint32_t DWT_Init(void) {
 	if (!(CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk)) {
 		CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
@@ -19,7 +26,7 @@ uint32_t DWT_Init(void) {
 	/* Enable  clock cycle counter */
 	DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 
-	for (int i = 0; i < 4; ++i) {
+	for (int i = 0; i < 5; ++i) {
 		__NOP();
 	}
 
@@ -28,10 +35,20 @@ uint32_t DWT_Init(void) {
 }
 
 void DWT_DelayUs(volatile uint32_t us) {
-	volatile uint32_t startTick = DWT_GetCycles();
-	volatile uint32_t delayTicks = us * (SystemCoreClock / 1000000);
+//	volatile uint32_t startTick = DWT_GetCycles();
+//	volatile uint32_t delayTicks = us * (SystemCoreClock / 1000000);
+//
+//	while (DWT_GetCycles() - startTick < delayTicks)
+//		;
 
-	while (DWT_GetCycles() - startTick < delayTicks)
+	uint32_t startTick = DWT->CYCCNT,
+			delayTicks = us * (SystemCoreClock / 1000000);
+
+	while (DWT->CYCCNT - startTick < delayTicks)
 		;
+}
+
+void DWT_DelayMs(uint32_t ms) {
+	DWT_DelayUs(1000 * ms);
 }
 

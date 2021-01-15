@@ -182,8 +182,7 @@ void led_display_temp_and_humi(uint8_t temp_int, uint8_t temp_decimals, uint8_t 
 	const uint8_t temp_int_1st = temp_int / 10;
 	const uint8_t temp_int_2nd = temp_int % 10;
 
-	const uint8_t temp_decimals_1st = temp_decimals / 10;
-
+	const uint8_t temp_decimals_1st = temp_decimals & 0x0f;
 
 	const uint8_t humidity_1st = humidity / 10;
 	const uint8_t humidity_2nd = humidity % 10;
@@ -480,7 +479,7 @@ int main(void) {
 	MX_FREERTOS_Init();
 
 	osTimerStart(getRTCTimerHandle, 100);
-	osTimerStart(getSensorDataTimerHandle, 30 * 1000);
+	osTimerStart(getSensorDataTimerHandle, 10 * 1000);
 	osTimerStart(togglePointTimerHandle, 500);
 	osTimerStart(showDateTimerHandle, 60 * 1000);
 
