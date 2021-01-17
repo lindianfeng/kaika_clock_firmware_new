@@ -17,7 +17,8 @@
 
 extern SPI_HandleTypeDef hspi1;
 
-typedef enum {
+typedef enum
+{
   REG_DECODE_MODE = 0x09,
   REG_INTENSITY = 0x0A,
   REG_SCAN_LIMIT = 0x0B,
@@ -25,7 +26,8 @@ typedef enum {
   REG_DISPLAY_TEST = 0x0F,
 } MAX72XX_REGISTERS;
 
-typedef struct {
+typedef struct
+{
   uint8_t dig[ROW_SIZE];  // data for each digit of the MAX72xx (DIG0-DIG7)
   uint8_t changed;        // one bit for each digit changed ('dirty bit')
 } deviceInfo_t;
@@ -37,38 +39,44 @@ static bool _wrapAround = true;    // when shifting, wrap left to right and vice
 static deviceInfo_t *_matrix = NULL; // the current status of the LED matrix (buffers)
 static uint8_t *_spiData = NULL;   // data buffer for writing to SPI interface
 
-void MAX72XX_Init(void) {
+void MAX72XX_Init(void)
+{
   _matrix = (deviceInfo_t*) malloc(sizeof(deviceInfo_t) * MAX_DEVICES);
   _spiData = (uint8_t*) malloc(SPI_DATA_SIZE);
 
   MAX72XX_ControlAll(TEST, OFF);                   // no test
   MAX72XX_ControlAll(SCANLIMIT, ROW_SIZE - 1);       // scan limit is set to max on startup
-  MAX72XX_ControlAll(INTENSITY,2);  // set intensity to a reasonable value
+  MAX72XX_ControlAll(INTENSITY, 2);  // set intensity to a reasonable value
   MAX72XX_ControlAll(DECODE, OFF);                 // ensure no decoding (warm boot potential issue)
   MAX72XX_ClearAll();
   MAX72XX_ControlAll(SHUTDOWN, OFF);               // take the modules out of shutdown mode
 }
 
-void MAX72XX_DeInit(void) {
+void MAX72XX_DeInit(void)
+{
   free(_matrix);
   free(_spiData);
 }
 
-uint8_t MAX72XX_GetDeviceCount(void) {
+uint8_t MAX72XX_GetDeviceCount(void)
+{
   return (MAX_DEVICES);
 }
 
-uint8_t MAX72XX_GetColumnCount(void) {
+uint8_t MAX72XX_GetColumnCount(void)
+{
   return (MAX_DEVICES * COL_SIZE);
 }
 
-static void MAX72XX_SpiSend() {
+static void MAX72XX_SpiSend()
+{
   CS_SET();
   HAL_SPI_Transmit(&hspi1, _spiData, SPI_DATA_SIZE, HAL_MAX_DELAY);
   CS_RESET();
 }
 
-static void MAX72XX_SpiClearBuffer(void) {
+static void MAX72XX_SpiClearBuffer(void)
+{
   memset(_spiData, 0, SPI_DATA_SIZE);
 }
 
@@ -79,8 +87,10 @@ static void MAX72XX_FlushBufferOne(uint8_t buf)
   if (buf > LAST_BUFFER)
     return;
 
-  for (uint8_t i = 0; i < ROW_SIZE; i++) {
-    if (bitRead(_matrix[buf].changed, i)) {
+  for (uint8_t i = 0; i < ROW_SIZE; i++)
+  {
+    if (bitRead(_matrix[buf].changed, i))
+    {
       MAX72XX_SpiClearBuffer();
 
       // put our device data into the buffer
@@ -99,14 +109,15 @@ static void MAX72XX_FlushBufferAll()
 // the number of communication messages required.
 {
   for (uint8_t i = 0; i < ROW_SIZE; i++)  // all data rows
-      {
+  {
     bool bChange = false; // set to true if we detected a change
 
     MAX72XX_SpiClearBuffer();
 
     for (uint8_t dev = FIRST_BUFFER; dev <= LAST_BUFFER; dev++) // all devices
-        {
-      if (bitRead(_matrix[dev].changed, i)) {
+    {
+      if (bitRead(_matrix[dev].changed, i))
+      {
         // put our device data into the buffer
         _spiData[SPI_OFFSET(dev, 0)] = OP_DIGIT0 + i;
         _spiData[SPI_OFFSET(dev, 1)] = _matrix[dev].dig[i];
@@ -123,14 +134,16 @@ static void MAX72XX_FlushBufferAll()
     _matrix[dev].changed = ALL_CLEAR;
 }
 
-static void MAX72XX_ControlHardware(uint8_t dev, controlRequest_t mode, int value) {
+static void MAX72XX_ControlHardware(uint8_t dev, controlRequest_t mode, int value)
+{
   // control command is for the devices, translate internal request to device bytes
   // into the transmission buffer
   uint8_t opcode = OP_NOOP;
   uint8_t param = 0;
 
   // work out data to write
-  switch (mode) {
+  switch (mode)
+  {
   case SHUTDOWN:
     opcode = OP_SHUTDOWN;
     param = (value == OFF ? 1 : 0);
@@ -165,9 +178,11 @@ static void MAX72XX_ControlHardware(uint8_t dev, controlRequest_t mode, int valu
   _spiData[SPI_OFFSET(dev, 1)] = param;
 }
 
-static void MAX7219ControlLibrary(controlRequest_t mode, int value) {
+static void MAX7219ControlLibrary(controlRequest_t mode, int value)
+{
   // control command was internal, set required parameters
-  switch (mode) {
+  switch (mode)
+  {
   case UPDATE:
     _updateEnabled = (value == ON);
     if (_updateEnabled)
@@ -183,38 +198,47 @@ static void MAX7219ControlLibrary(controlRequest_t mode, int value) {
   }
 }
 
-bool MAX72XX_ControlOne(uint8_t buf, controlRequest_t mode, int value) {
+bool MAX72XX_ControlOne(uint8_t buf, controlRequest_t mode, int value)
+{
   // dev is zero based and needs adjustment if used
-  if (buf > LAST_BUFFER) {
+  if (buf > LAST_BUFFER)
+  {
     return (false);
   }
 
-  if (mode < UPDATE) {
+  if (mode < UPDATE)
+  {
     // device based control
     MAX72XX_SpiClearBuffer();
     MAX72XX_ControlHardware(buf, mode, value);
     MAX72XX_SpiSend();
-  } else {
+  } else
+  {
     // internal control function, doesn't relate to specific device
     MAX7219ControlLibrary(mode, value);
   }
 
   return (true);
 }
-bool MAX72XX_ControlBy(uint8_t startDev, uint8_t endDev, controlRequest_t mode, int value) {
-  if (endDev < startDev) {
+bool MAX72XX_ControlBy(uint8_t startDev, uint8_t endDev, controlRequest_t mode, int value)
+{
+  if (endDev < startDev)
+  {
     return (false);
   }
 
-  if (mode < UPDATE) {
+  if (mode < UPDATE)
+  {
     // device based control
     MAX72XX_SpiClearBuffer();
-    for (uint8_t i = startDev; i <= endDev; i++) {
+    for (uint8_t i = startDev; i <= endDev; i++)
+    {
       MAX72XX_ControlHardware(i, mode, value);
     }
 
     MAX72XX_SpiSend();
-  } else {
+  } else
+  {
     // internal control function, doesn't relate to specific device
     MAX7219ControlLibrary(mode, value);
   }
@@ -222,12 +246,14 @@ bool MAX72XX_ControlBy(uint8_t startDev, uint8_t endDev, controlRequest_t mode, 
   return (true);
 }
 
-void MAX72XX_ControlAll(controlRequest_t mode, int value) {
+void MAX72XX_ControlAll(controlRequest_t mode, int value)
+{
   MAX72XX_ControlBy(0, MAX72XX_GetDeviceCount() - 1, mode, value);
 }
 
 //for buff
-bool MAX72XX_ClearOne(uint8_t buf) {
+bool MAX72XX_ClearOne(uint8_t buf)
+{
   if (buf > LAST_BUFFER)
     return (false);
 
@@ -240,11 +266,13 @@ bool MAX72XX_ClearOne(uint8_t buf) {
   return (true);
 }
 
-void MAX72XX_ClearBy(uint8_t startDev, uint8_t endDev) {
+void MAX72XX_ClearBy(uint8_t startDev, uint8_t endDev)
+{
   if (endDev < startDev)
     return;
 
-  for (uint8_t buf = startDev; buf <= endDev; buf++) {
+  for (uint8_t buf = startDev; buf <= endDev; buf++)
+  {
     memset(_matrix[buf].dig, 0, sizeof(_matrix[buf].dig));
     _matrix[buf].changed = ALL_CHANGED;
   }
@@ -253,7 +281,8 @@ void MAX72XX_ClearBy(uint8_t startDev, uint8_t endDev) {
     MAX72XX_FlushBufferAll();
 }
 
-void MAX72XX_ClearAll(void) {
+void MAX72XX_ClearAll(void)
+{
   MAX72XX_ClearBy(0, MAX72XX_GetDeviceCount() - 1);
 }
 
@@ -279,7 +308,8 @@ uint8_t MAX72XX_GetC(uint8_t buf, uint8_t c)
 
   // for each digit data, pull out the column/row bit and place
   // it in value. The loop creates the data in pixel coordinate order as it goes.
-  for (uint8_t i = 0; i < ROW_SIZE; i++) {
+  for (uint8_t i = 0; i < ROW_SIZE; i++)
+  {
     if (_matrix[buf].dig[HW_ROW(i)] & mask)
       bitSet(value, i);
   }
@@ -308,7 +338,8 @@ bool MAX72XX_CopyC(uint8_t buf, uint8_t cSrc, uint8_t cDest)
   if ((buf > LAST_BUFFER) || (cSrc >= COL_SIZE) || (cDest >= COL_SIZE))
     return (false);
 
-  for (uint8_t i = 0; i < ROW_SIZE; i++) {
+  for (uint8_t i = 0; i < ROW_SIZE; i++)
+  {
     if (_matrix[buf].dig[i] & maskSrc)
       bitSet(_matrix[buf].dig[i], HW_COL(cDest));
     else
@@ -339,32 +370,37 @@ bool MAX72XX_CopyR(uint8_t buf, uint8_t rSrc, uint8_t rDest)
   return (true);
 }
 
-bool MAX72XX_CopyColumn(uint8_t buf, uint8_t cSrc, uint8_t cDest) {
+bool MAX72XX_CopyColumn(uint8_t buf, uint8_t cSrc, uint8_t cDest)
+{
   if (_hwDigRows)
     return (MAX72XX_CopyC(buf, cSrc, cDest));
   else
     return (MAX72XX_CopyR(buf, cSrc, cDest));
 }
 
-bool MAX72XX_CopyRow(uint8_t buf, uint8_t rSrc, uint8_t rDest) {
+bool MAX72XX_CopyRow(uint8_t buf, uint8_t rSrc, uint8_t rDest)
+{
   if (_hwDigRows)
     return (MAX72XX_CopyR(buf, rSrc, rDest));
   else
     return (MAX72XX_CopyC(buf, rSrc, rDest));
 }
 
-uint8_t MAX72XX_GetDevColumn(uint8_t buf, uint8_t c) {
+uint8_t MAX72XX_GetDevColumn(uint8_t buf, uint8_t c)
+{
   if (_hwDigRows)
     return (MAX72XX_GetC(buf, c));
   else
     return (MAX72XX_GetR(buf, c));
 }
 
-uint8_t MAX72XX_GetPixelColumn(uint8_t c) {
+uint8_t MAX72XX_GetPixelColumn(uint8_t c)
+{
   return MAX72XX_GetDevColumn((c / COL_SIZE), c % COL_SIZE);
 }
 
-uint8_t MAX72XX_GetRow(uint8_t buf, uint8_t r) {
+uint8_t MAX72XX_GetRow(uint8_t buf, uint8_t r)
+{
   if (_hwDigRows)
     return (MAX72XX_GetR(buf, r));
   else
@@ -377,7 +413,8 @@ bool MAX72XX_SetC(uint8_t buf, uint8_t c, uint8_t value)
   if ((buf > LAST_BUFFER) || (c >= COL_SIZE))
     return (false);
 
-  for (uint8_t i = 0; i < ROW_SIZE; i++) {
+  for (uint8_t i = 0; i < ROW_SIZE; i++)
+  {
     if (value & (1 << i))   // mask off next column/row value passed in and set it in the dig buffer
       bitSet(_matrix[buf].dig[HW_ROW(i)], HW_COL(c));
     else
@@ -406,38 +443,46 @@ bool MAX72XX_SetR(uint8_t buf, uint8_t r, uint8_t value)
   return (true);
 }
 
-bool MAX72XX_SetDevColumn(uint8_t buf, uint8_t c, uint8_t value) {
+bool MAX72XX_SetDevColumn(uint8_t buf, uint8_t c, uint8_t value)
+{
   if (_hwDigRows)
     return (MAX72XX_SetC(buf, c, value));
   else
     return (MAX72XX_SetR(buf, c, value));
 }
 
-bool MAX72XX_SetPixelColumn(uint16_t c, uint8_t value) {
+bool MAX72XX_SetPixelColumn(uint16_t c, uint8_t value)
+{
   return MAX72XX_SetDevColumn((c / COL_SIZE), c % COL_SIZE, value);
 }
 
-bool MAX72XX_SetRowOne(uint8_t buf, uint8_t r, uint8_t value) {
+bool MAX72XX_SetRowOne(uint8_t buf, uint8_t r, uint8_t value)
+{
   if (_hwDigRows)
     return (MAX72XX_SetR(buf, r, value));
   else
     return (MAX72XX_SetC(buf, r, value));
 }
 
-bool MAX72XX_TransformBuffer(uint8_t buf, transformType_t ttype) {
+bool MAX72XX_TransformBuffer(uint8_t buf, transformType_t ttype)
+{
   uint8_t t[ROW_SIZE];
 
-  switch (ttype) {
+  switch (ttype)
+  {
   //--------------
   case TSL: // Transform Shift Left one pixel element
-    if (_hwDigRows) {
-      for (uint8_t i = 0; i < ROW_SIZE; i++) {
+    if (_hwDigRows)
+    {
+      for (uint8_t i = 0; i < ROW_SIZE; i++)
+      {
         if (_hwRevCols)
           _matrix[buf].dig[i] >>= 1;
         else
           _matrix[buf].dig[i] <<= 1;
       }
-    } else {
+    } else
+    {
       for (uint8_t i = ROW_SIZE; i > 0; --i)
         _matrix[buf].dig[i] = _matrix[buf].dig[i - 1];
     }
@@ -445,14 +490,17 @@ bool MAX72XX_TransformBuffer(uint8_t buf, transformType_t ttype) {
 
     //--------------
   case TSR: // Transform Shift Right one pixel element
-    if (_hwDigRows) {
-      for (uint8_t i = 0; i < ROW_SIZE; i++) {
+    if (_hwDigRows)
+    {
+      for (uint8_t i = 0; i < ROW_SIZE; i++)
+      {
         if (_hwRevCols)
           _matrix[buf].dig[i] <<= 1;
         else
           _matrix[buf].dig[i] >>= 1;
       }
-    } else {
+    } else
+    {
       for (uint8_t i = 0; i < ROW_SIZE - 1; i++)
         _matrix[buf].dig[i] = _matrix[buf].dig[i + 1];
     }
@@ -465,10 +513,12 @@ bool MAX72XX_TransformBuffer(uint8_t buf, transformType_t ttype) {
     else
       t[0] = 0;
 
-    if (_hwDigRows) {
+    if (_hwDigRows)
+    {
       for (uint8_t i = 0; i < ROW_SIZE - 1; i++)
         MAX72XX_CopyRow(buf, i + 1, i);
-    } else {
+    } else
+    {
       for (int8_t i = ROW_SIZE - 1; i >= 0; i--)
         _matrix[buf].dig[i] <<= 1;
     }
@@ -482,10 +532,12 @@ bool MAX72XX_TransformBuffer(uint8_t buf, transformType_t ttype) {
     else
       t[0] = 0;
 
-    if (_hwDigRows) {
+    if (_hwDigRows)
+    {
       for (uint8_t i = ROW_SIZE; i > 0; --i)
         MAX72XX_CopyRow(buf, i - 1, i);
-    } else {
+    } else
+    {
       for (uint8_t i = 0; i < ROW_SIZE; i++)
         _matrix[buf].dig[i] >>= 1;
     }
@@ -494,12 +546,14 @@ bool MAX72XX_TransformBuffer(uint8_t buf, transformType_t ttype) {
 
     //--------------
   case TFLR: // Transform Flip Left to Right
-    if (_hwDigRows) {
+    if (_hwDigRows)
+    {
       for (uint8_t i = 0; i < ROW_SIZE; i++)
         _matrix[buf].dig[i] = MAX72XX_BitReverse(_matrix[buf].dig[i]);
     } else  // really a TFUD
     {
-      for (uint8_t i = 0; i < ROW_SIZE / 2; i++) {
+      for (uint8_t i = 0; i < ROW_SIZE / 2; i++)
+      {
         uint8_t t = _matrix[buf].dig[i];
         _matrix[buf].dig[i] = _matrix[buf].dig[ROW_SIZE - i - 1];
         _matrix[buf].dig[ROW_SIZE - i - 1] = t;
@@ -509,8 +563,10 @@ bool MAX72XX_TransformBuffer(uint8_t buf, transformType_t ttype) {
 
     //--------------
   case TFUD: // Transform Flip Up to Down
-    if (_hwDigRows) {
-      for (uint8_t i = 0; i < ROW_SIZE / 2; i++) {
+    if (_hwDigRows)
+    {
+      for (uint8_t i = 0; i < ROW_SIZE / 2; i++)
+      {
         uint8_t t = _matrix[buf].dig[i];
         _matrix[buf].dig[i] = _matrix[buf].dig[ROW_SIZE - i - 1];
         _matrix[buf].dig[ROW_SIZE - i - 1] = t;
@@ -546,7 +602,8 @@ bool MAX72XX_TransformBuffer(uint8_t buf, transformType_t ttype) {
   return (true);
 }
 
-bool MAX72XX_TransformOne(uint8_t buf, transformType_t ttype) {
+bool MAX72XX_TransformOne(uint8_t buf, transformType_t ttype)
+{
   if (buf > LAST_BUFFER)
     return (false);
 
@@ -560,7 +617,8 @@ bool MAX72XX_TransformOne(uint8_t buf, transformType_t ttype) {
 }
 
 //for pix
-bool MAX72XX_GetBuffer(uint16_t col, uint8_t size, uint8_t *pd) {
+bool MAX72XX_GetBuffer(uint16_t col, uint8_t size, uint8_t *pd)
+{
   if ((col >= MAX72XX_GetColumnCount()) || (pd == NULL))
     return (false);
 
@@ -570,7 +628,8 @@ bool MAX72XX_GetBuffer(uint16_t col, uint8_t size, uint8_t *pd) {
   return (true);
 }
 
-bool MAX72XX_SetBuffer(uint16_t col, uint8_t size, uint8_t *pd) {
+bool MAX72XX_SetBuffer(uint16_t col, uint8_t size, uint8_t *pd)
+{
   bool b = _updateEnabled;
 
   if ((col >= MAX72XX_GetColumnCount()) || (pd == NULL))
@@ -587,7 +646,8 @@ bool MAX72XX_SetBuffer(uint16_t col, uint8_t size, uint8_t *pd) {
   return (true);
 }
 
-bool MAX72XX_GetPoint(uint8_t r, uint16_t c) {
+bool MAX72XX_GetPoint(uint8_t r, uint16_t c)
+{
   uint8_t buf = c / COL_SIZE;
   c %= COL_SIZE;
 
@@ -600,19 +660,22 @@ bool MAX72XX_GetPoint(uint8_t r, uint16_t c) {
     return (bitRead(_matrix[buf].dig[HW_ROW(c)], HW_COL(r)) == 1);
 }
 
-bool MAX72XX_SetPoint(uint8_t r, uint16_t c, bool state) {
+bool MAX72XX_SetPoint(uint8_t r, uint16_t c, bool state)
+{
   uint8_t buf = c / COL_SIZE;
   c %= COL_SIZE;
 
   if ((buf > LAST_BUFFER) || (r >= ROW_SIZE) || (c >= COL_SIZE))
     return (false);
 
-  if (state) {
+  if (state)
+  {
     if (_hwDigRows)
       bitSet(_matrix[buf].dig[HW_ROW(r)], HW_COL(c));
     else
       bitSet(_matrix[buf].dig[HW_ROW(c)], HW_COL(r));
-  } else {
+  } else
+  {
     if (_hwDigRows)
       bitClear(_matrix[buf].dig[HW_ROW(r)], HW_COL(c));
     else
@@ -630,7 +693,8 @@ bool MAX72XX_SetPoint(uint8_t r, uint16_t c, bool state) {
   return (true);
 }
 
-bool MAX72XX_SetRowBy(uint8_t startDev, uint8_t endDev, uint8_t r, uint8_t value) {
+bool MAX72XX_SetRowBy(uint8_t startDev, uint8_t endDev, uint8_t r, uint8_t value)
+{
   bool b = _updateEnabled;
 
   if ((r >= ROW_SIZE) || (endDev < startDev))
@@ -647,11 +711,13 @@ bool MAX72XX_SetRowBy(uint8_t startDev, uint8_t endDev, uint8_t r, uint8_t value
   return (true);
 }
 
-bool MAX72XX_SetRowAll(uint8_t r, uint8_t value) {
+bool MAX72XX_SetRowAll(uint8_t r, uint8_t value)
+{
   return MAX72XX_SetRowBy(0, MAX72XX_GetDeviceCount() - 1, r, value);
 }
 
-bool MAX72XX_TransformBy(uint8_t startDev, uint8_t endDev, transformType_t ttype) {
+bool MAX72XX_TransformBy(uint8_t startDev, uint8_t endDev, transformType_t ttype)
+{
   // uint8_t t[ROW_SIZE];
   uint8_t colData;
   bool b = _updateEnabled;
@@ -661,14 +727,16 @@ bool MAX72XX_TransformBy(uint8_t startDev, uint8_t endDev, transformType_t ttype
 
   _updateEnabled = false;
 
-  switch (ttype) {
+  switch (ttype)
+  {
   case TSL: // Transform Shift Left one pixel element (with overflow)
     colData = 0;
     if (_wrapAround)
       colData = MAX72XX_GetPixelColumn(((endDev + 1) * COL_SIZE) - 1);
 
     // shift all the buffers along
-    for (int8_t buf = endDev; buf >= startDev; --buf) {
+    for (int8_t buf = endDev; buf >= startDev; --buf)
+    {
       MAX72XX_TransformBuffer(buf, ttype);
       // handle the boundary condition
       MAX72XX_SetDevColumn(buf, 0, MAX72XX_GetDevColumn(buf - 1, COL_SIZE - 1));
@@ -686,7 +754,8 @@ bool MAX72XX_TransformBy(uint8_t startDev, uint8_t endDev, transformType_t ttype
       colData = MAX72XX_GetPixelColumn(startDev * COL_SIZE);
 
     // shift all the buffers along
-    for (uint8_t buf = startDev; buf <= endDev; buf++) {
+    for (uint8_t buf = startDev; buf <= endDev; buf++)
+    {
       MAX72XX_TransformBuffer(buf, ttype);
 
       // handle the boundary condition
@@ -698,7 +767,8 @@ bool MAX72XX_TransformBy(uint8_t startDev, uint8_t endDev, transformType_t ttype
 
   case TFLR: // Transform Flip Left to Right (use the whole field)
     // first reverse the device buffers end for end
-    for (uint8_t buf = 0; buf < (endDev - startDev + 1) / 2; buf++) {
+    for (uint8_t buf = 0; buf < (endDev - startDev + 1) / 2; buf++)
+    {
       deviceInfo_t t;
 
       t = _matrix[startDev + buf];
@@ -733,24 +803,27 @@ bool MAX72XX_TransformBy(uint8_t startDev, uint8_t endDev, transformType_t ttype
   return (true);
 }
 
-bool MAX72XX_TransformAll(transformType_t ttype){
-  return MAX72XX_TransformBy(0, MAX72XX_GetDeviceCount()-1, ttype);
+bool MAX72XX_TransformAll(transformType_t ttype)
+{
+  return MAX72XX_TransformBy(0, MAX72XX_GetDeviceCount() - 1, ttype);
 }
 
-void MAX72XX_UpdateAll(void) {
+void MAX72XX_UpdateAll(void)
+{
   MAX72XX_FlushBufferAll();
 }
-void MAX72XX_UpdateMode(controlValue_t mode) {
+void MAX72XX_UpdateMode(controlValue_t mode)
+{
   MAX72XX_ControlAll(UPDATE, mode);
 }
 
-void MAX72XX_UpdateOne(uint8_t buf) {
+void MAX72XX_UpdateOne(uint8_t buf)
+{
   MAX72XX_FlushBufferOne(buf);
 }
 
-void MAX72XX_Wraparound(controlValue_t mode) {
+void MAX72XX_Wraparound(controlValue_t mode)
+{
   MAX72XX_ControlAll(WRAPAROUND, mode);
 }
-
-
 

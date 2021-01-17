@@ -26,7 +26,8 @@
 #define DS3231_STA_A2F 0x02
 #define DS3231_STA_A1F 0x01
 
-typedef enum {
+typedef enum
+{
   ALARM_MODE_ALL_MATCHED = 0,
   ALARM_MODE_HOUR_MIN_SEC_MATCHED,
   ALARM_MODE_MIN_SEC_MATCHED,
@@ -34,7 +35,8 @@ typedef enum {
   ALARM_MODE_ONCE_PER_SECOND
 } AlarmMode;
 
-typedef enum {
+typedef enum
+{
   SUNDAY = 1,
   MONDAY,
   TUESDAY,
@@ -44,7 +46,8 @@ typedef enum {
   SATURDAY
 } DaysOfWeek;
 
-typedef struct {
+typedef struct
+{
   uint16_t Year;
   uint8_t Month;
   uint8_t Day;
@@ -59,7 +62,7 @@ bool DS3231_GetTime(RTC_Data *rtc);
 bool DS3231_SetTime(RTC_Data *rtc);
 bool DS3231_ReadTemperature(float *temp);
 bool DS3231_SetAlarm(uint8_t mode, uint8_t date, uint8_t hour, uint8_t min,
-                     uint8_t sec);
+    uint8_t sec);
 bool DS3231_ClearAlarm(void);
 bool ReadRegister(uint8_t regAddr, uint8_t *value);
 bool WriteRegister(uint8_t regAddr, uint8_t value);

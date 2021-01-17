@@ -49,7 +49,6 @@
 #define _hwRevCols 0
 #define _hwRevRows 1
 
-
 // Macros to map reversed ROW and COLUMN coordinates
 #define HW_ROW(r) (_hwRevRows ? (ROW_SIZE - 1 - (r)) : (r)) ///< Pixel to hardware coordinate row mapping
 #define HW_COL(c) (_hwRevCols ? (COL_SIZE - 1 - (c)) : (c)) ///< Pixel to hardware coordinate column mapping
@@ -57,13 +56,14 @@
 #define SPI_DATA_SIZE (sizeof(uint8_t)*MAX_DEVICES*2)   ///< Size of the SPI data buffers
 #define SPI_OFFSET(i,x) (((LAST_BUFFER-(i))*2)+(x))     ///< SPI data offset for buffer i, digit x
 
-
-typedef enum {
+typedef enum
+{
   OFF = 0,  ///< General OFF status request
   ON = 1    ///< General ON status request
 } controlValue_t;
 
-typedef enum {
+typedef enum
+{
   SHUTDOWN = 0,   ///< Shut down the MAX7219. Requires ON/OFF value. Library default is OFF.
   SCANLIMIT = 1,  ///< Set the scan limit for the MAX7219. Requires numeric value [0..MAX_SCANLIMIT]. Library default is all on.
   INTENSITY = 2,  ///< Set the LED intensity for the MAX7219. Requires numeric value [0..MAX_INTENSITY]. LIbrary default is MAX_INTENSITY/2.
@@ -73,7 +73,8 @@ typedef enum {
   WRAPAROUND = 11 ///< Enable or disable wraparound when shifting (circular buffer). Requires ON/OFF value. Library default is OFF.
 } controlRequest_t;
 
-typedef enum {
+typedef enum
+{
   TSL,  ///< Transform Shift Left one pixel element
   TSR,  ///< Transform Shift Right one pixel element
   TSU,  ///< Transform Shift Up one pixel element
@@ -93,7 +94,6 @@ uint8_t MAX72XX_GetColumnCount(void);
 bool MAX72XX_ControlOne(uint8_t buf, controlRequest_t mode, int value);
 bool MAX72XX_ControlBy(uint8_t startDev, uint8_t endDev, controlRequest_t mode, int value);
 void MAX72XX_ControlAll(controlRequest_t mode, int value);
-
 
 bool MAX72XX_ClearOne(uint8_t buf);
 void MAX72XX_ClearBy(uint8_t startDev, uint8_t endDev);
@@ -125,6 +125,5 @@ void MAX72XX_UpdateOne(uint8_t buf);
 void MAX72XX_UpdateMode(controlValue_t mode);
 
 void MAX72XX_Wraparound(controlValue_t mode);
-
 
 #endif /* INC_MAX72XX_H_ */
