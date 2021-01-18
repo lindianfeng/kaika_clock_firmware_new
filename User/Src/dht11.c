@@ -56,8 +56,9 @@ static inline uint8_t DHT11_Check(void)
 
   DHT11_Mode_IN_NP();       //SET INPUT
 
-  while (DHT11_IN && retry < 100)       //DHT11 Pull down 40~80us
+  while (DHT11_IN && retry < 100)
   {
+    //DHT11 Pull down 40~80us
     retry++;
     DWT_DelayUs(1);
   }
@@ -69,8 +70,9 @@ static inline uint8_t DHT11_Check(void)
 
   retry = 0;
 
-  while (!DHT11_IN && retry < 100)       //DHT11 Pull up 40~80us
+  while (!DHT11_IN && retry < 100)
   {
+    //DHT11 Pull up 40~80us
     retry++;
     DWT_DelayUs(1);
   }
@@ -89,16 +91,18 @@ static inline uint8_t DHT11_ReadBit(void)
 {
   uint8_t retry = 0;
 
-  while (DHT11_IN && retry < 100)       //wait become Low level
+  while (DHT11_IN && retry < 100)
   {
+    //wait become Low level
     retry++;
     DWT_DelayUs(1);
   }
 
   retry = 0;
 
-  while (!DHT11_IN && retry < 100)       //wait become High level
+  while (!DHT11_IN && retry < 100)
   {
+    //wait become High level
     retry++;
     DWT_DelayUs(1);
   }
@@ -163,8 +167,9 @@ uint8_t DHT11_ReadDataFloat(float *temp, float *humi)
     return 1;
   }
 
-  for (int i = 0; i < 5; i++) //读取40位数据
+  for (int i = 0; i < 5; i++)
   {
+    //读取40位数据
     buf[i] = DHT11_ReadByte();
   }
 

@@ -15,12 +15,14 @@
 #include "dht11.h"
 #include "FreeRTOS.h"
 #include "cmsis_os.h"
+#include "key.h"
 #include "delay.h"
 #include "utils.h"
 
 extern RTC_Data rtc;
 
 extern osThreadId mainTaskHandle;
+extern osThreadId keyTaskHandle;
 
 extern osTimerId getRTCTimerHandle;
 extern osTimerId getSensorDataTimerHandle;
@@ -84,6 +86,8 @@ enum
   CLOCK_FLAG_SHOW_DATE = 3,
   CLOCK_FLAG_SHOW_TEMP = 4,
   CLOCK_FLAG_FLASH_POINT = 5,
+  CLOCK_FLAG_KEY1_PRESSED = 6,
+  CLOCK_FLAG_KEY2_PRESSED = 7,
 };
 
 static inline void SetClockFlag(uint32_t bit)
@@ -311,14 +315,15 @@ static void Clock_ShowWelcome(void)
   MAX72XX_ControlAll(UPDATE, 1);
   MAX72XX_ClearAll();
 
-  vTaskDelay(200);
+  osDelay(200);
+
   for (uint8_t row = 0; row < 8; row++)
   {
     MAX72XX_SetRowAll(row, 0xff);
-    vTaskDelay(20);
+    osDelay(20);
   }
 
-  vTaskDelay(200);
+  osDelay(200);
 
   MAX72XX_ClearAll();
 
@@ -330,7 +335,7 @@ static void Clock_ShowWelcome(void)
     vTaskDelay(15);
   }
 
-  vTaskDelay(200);
+  osDelay(200);
 
   MAX72XX_ClearAll();
   for (int i = 0; i < 8; i++)
@@ -338,7 +343,7 @@ static void Clock_ShowWelcome(void)
     MAX72XX_SetRowAll(i, 0xff);
     vTaskDelay(20);
     MAX72XX_SetRowAll(i, 0x00);
-    vTaskDelay(20);
+    osDelay(20);
   }
 
   vTaskDelay(200);
@@ -357,6 +362,11 @@ enum
   STATE_CLOCK_TIME_SEC_JUMP_DOWN = 3,
   STATE_CLOCK_DATE = 4,
   STATE_CLOCK_TEMP = 5,
+  STATE_CLOCK_KEY_INPUT0 = 6,
+  STATE_CLOCK_KEY_INPUT1 = 7,
+  STATE_CLOCK_KEY_INPUT2 = 8,
+  STATE_CLOCK_KEY_INPUT3 = 9,
+  STATE_CLOCK_KEY_INPUT4 = 10,
 };
 
 typedef struct
@@ -412,6 +422,46 @@ static ClockState clock_states[] = {
     },
     {
         .state = STATE_CLOCK_TEMP,
+        .next_state = STATE_CLOCK_TIME_SHOW,
+        .repeat = 1,
+        .duration = 2000,
+        .callback = Clock_ShowTemp,
+        .change_state = 0
+    },
+    {
+        .state = STATE_CLOCK_KEY_INPUT0,
+        .next_state = STATE_CLOCK_TIME_SHOW,
+        .repeat = 1,
+        .duration = 2000,
+        .callback = Clock_ShowTemp,
+        .change_state = 0
+    },
+    {
+        .state = STATE_CLOCK_KEY_INPUT1,
+        .next_state = STATE_CLOCK_TIME_SHOW,
+        .repeat = 1,
+        .duration = 2000,
+        .callback = Clock_ShowTemp,
+        .change_state = 0
+    },
+    {
+        .state = STATE_CLOCK_KEY_INPUT2,
+        .next_state = STATE_CLOCK_TIME_SHOW,
+        .repeat = 1,
+        .duration = 2000,
+        .callback = Clock_ShowTemp,
+        .change_state = 0
+    },
+    {
+        .state = STATE_CLOCK_KEY_INPUT3,
+        .next_state = STATE_CLOCK_TIME_SHOW,
+        .repeat = 1,
+        .duration = 2000,
+        .callback = Clock_ShowTemp,
+        .change_state = 0
+    },
+    {
+        .state = STATE_CLOCK_KEY_INPUT4,
         .next_state = STATE_CLOCK_TIME_SHOW,
         .repeat = 1,
         .duration = 2000,
@@ -481,6 +531,27 @@ void CallbackTogglePoint(void const *argument)
   Clock_SetRunLed(TestClockFlag(CLOCK_FLAG_FLASH_POINT));
 }
 
+void StartCheckKeyTask(void const *argument)
+{
+  for (;;)
+  {
+    if (Key_Scan(KEY1_GPIO_Port, KEY1_Pin) == KEY_ON)
+    {
+      /* K1 被按下 */
+      SetClockFlag(CLOCK_FLAG_KEY1_PRESSED);
+    }
+
+    if (Key_Scan(KEY2_GPIO_Port, KEY2_Pin) == KEY_ON)
+    {
+      /* K2 被按下 */
+      SetClockFlag(CLOCK_FLAG_KEY2_PRESSED);
+    }
+
+    osDelay(100);
+  }
+
+}
+
 static inline bool IsNotInShowTimeState(ClockState *s)
 {
   if (s->state == STATE_CLOCK_DATE || s->state == STATE_CLOCK_TEMP)
@@ -502,7 +573,13 @@ void StartMainTask(void const *argument)
 
   for (;;)
   {
-    if (!IsNotInShowTimeState(&clock_s) && TestAndClearFlag(CLOCK_FLAG_TIME_SECOND_CHANGED))
+    if (TestAndClearFlag(CLOCK_FLAG_KEY1_PRESSED))
+    {
+      ChangeClockState(&clock_s, STATE_CLOCK_DATE);
+    } else if (TestAndClearFlag(CLOCK_FLAG_KEY2_PRESSED))
+    {
+      ChangeClockState(&clock_s, STATE_CLOCK_TEMP);
+    } else if (!IsNotInShowTimeState(&clock_s) && TestAndClearFlag(CLOCK_FLAG_TIME_SECOND_CHANGED))
     {
       ChangeClockState(&clock_s, STATE_CLOCK_TIME_SEC_CHANGED);
     } else if (TestAndClearFlag(CLOCK_FLAG_SHOW_DATE))
@@ -514,12 +591,14 @@ void StartMainTask(void const *argument)
 
     Clock_UpdateDiplay();
 
-    vTaskDelay(clock_s.duration);
+    osDelay(clock_s.duration);
 
     if (clock_s.change_state)
     {
       ChangeClockState(&clock_s, clock_s.next_state);
     }
+
+    osDelay(1);
   }
 }
 
