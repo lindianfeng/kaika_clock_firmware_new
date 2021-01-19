@@ -495,7 +495,7 @@ static inline void TickState(ClockState *s)
     s->callback();
   }
 
-  if (s->repeat != -1)
+  if (s->repeat != -1 && s->duration)
   {
     s->repeat--;
 
