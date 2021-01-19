@@ -13,7 +13,6 @@
 #include "max72xx.h"
 #include "main.h"
 #include "dht11.h"
-#include "FreeRTOS.h"
 #include "cmsis_os.h"
 #include "key.h"
 #include "delay.h"
