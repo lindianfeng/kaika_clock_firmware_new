@@ -5,7 +5,7 @@
  *      Author: kiki
  */
 #include "ds3231.h"
-#include "main.h"
+#include "stm32f1xx_hal.h"
 
 extern I2C_HandleTypeDef hi2c1;
 
