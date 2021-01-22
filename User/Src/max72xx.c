@@ -39,6 +39,8 @@ static bool _wrapAround = true;    // when shifting, wrap left to right and vice
 static deviceInfo_t *_matrix = NULL; // the current status of the LED matrix (buffers)
 static uint8_t *_spiData = NULL;   // data buffer for writing to SPI interface
 
+static uint8_t _intensity = 8;
+
 void MAX72XX_Init(void)
 {
   _matrix = (deviceInfo_t*) malloc(sizeof(deviceInfo_t) * MAX_DEVICES);
@@ -46,7 +48,7 @@ void MAX72XX_Init(void)
 
   MAX72XX_ControlAll(TEST, OFF);                   // no test
   MAX72XX_ControlAll(SCANLIMIT, ROW_SIZE - 1);       // scan limit is set to max on startup
-  MAX72XX_ControlAll(INTENSITY, 2);  // set intensity to a reasonable value
+  MAX72XX_ControlAll(INTENSITY, _intensity);  // set intensity to a reasonable value
   MAX72XX_ControlAll(DECODE, OFF);                 // ensure no decoding (warm boot potential issue)
   MAX72XX_ClearAll();
   MAX72XX_ControlAll(SHUTDOWN, OFF);               // take the modules out of shutdown mode
@@ -56,6 +58,17 @@ void MAX72XX_DeInit(void)
 {
   free(_matrix);
   free(_spiData);
+}
+
+void MAX72XX_SetIntensity(uint8_t intensity)
+{
+  _intensity = intensity;
+  MAX72XX_ControlAll(INTENSITY, _intensity);
+}
+
+uint8_t MAX72XX_GetIntensity(void)
+{
+  return _intensity;
 }
 
 uint8_t MAX72XX_GetDeviceCount(void)

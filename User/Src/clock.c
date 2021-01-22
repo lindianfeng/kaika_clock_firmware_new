@@ -17,7 +17,9 @@
 #include "key.h"
 #include "delay.h"
 #include "utils.h"
+#include "usbd_cdc_if.h"
 
+extern ADC_HandleTypeDef hadc1;
 extern RTC_Data rtc;
 
 extern osThreadId mainTaskHandle;
@@ -30,6 +32,7 @@ extern osTimerId showDateTimerHandle;
 
 extern void SystemClock_Config(void);
 extern void MX_FREERTOS_Init(void);
+extern void MX_USB_DEVICE_Init(void);
 
 static uint8_t temp_int = 0;
 static uint8_t temp_deci = 0;
@@ -510,6 +513,7 @@ void CallbackGetRTC(void const *argument)
   if (Clock_UpdateRTC())
   {
     SetClockFlag(CLOCK_FLAG_TIME_SECOND_CHANGED);
+    usb_printf("sec changed!\r\n");
   }
 }
 
@@ -551,6 +555,25 @@ void StartCheckKeyTask(void const *argument)
 
 }
 
+void StartAdcTask(void const *argument)
+{
+  uint32_t ad_Value = 0;
+
+  for (;;)
+  {
+    HAL_ADC_Start(&hadc1);
+    HAL_ADC_PollForConversion(&hadc1, 50);
+
+    if (HAL_IS_BIT_SET(HAL_ADC_GetState(&hadc1), HAL_ADC_STATE_REG_EOC))
+    {
+      ad_Value = HAL_ADC_GetValue(&hadc1);
+      MAX72XX_SetIntensity(15 - ad_Value / 166);
+    }
+
+    osDelay(500);
+  }
+}
+
 static inline bool IsNotInShowTimeState(ClockState *s)
 {
   if (s->state == STATE_CLOCK_DATE || s->state == STATE_CLOCK_TEMP)
@@ -569,6 +592,8 @@ void StartMainTask(void const *argument)
   DHT11_Init();
 
   clock_s = clock_states[0];
+
+  usb_printf("start main task\r\n");
 
   for (;;)
   {
@@ -609,6 +634,8 @@ int main(void)
   MX_I2C1_Init();
   MX_SPI1_Init();
   MX_ADC1_Init();
+  MX_USB_DEVICE_Init();
+
   DWT_Init();
 
   MX_FREERTOS_Init();

@@ -91,6 +91,9 @@ void MAX72XX_DeInit(void);
 uint8_t MAX72XX_GetDeviceCount(void);
 uint8_t MAX72XX_GetColumnCount(void);
 
+void MAX72XX_SetIntensity(uint8_t intensity);
+uint8_t MAX72XX_GetIntensity(void);
+
 bool MAX72XX_ControlOne(uint8_t buf, controlRequest_t mode, int value);
 bool MAX72XX_ControlBy(uint8_t startDev, uint8_t endDev, controlRequest_t mode, int value);
 void MAX72XX_ControlAll(controlRequest_t mode, int value);
