@@ -567,7 +567,14 @@ void StartAdcTask(void const *argument)
     if (HAL_IS_BIT_SET(HAL_ADC_GetState(&hadc1), HAL_ADC_STATE_REG_EOC))
     {
       ad_Value = HAL_ADC_GetValue(&hadc1);
-      MAX72XX_SetIntensity(15 - ad_Value / 166);
+
+      const uint8_t cur_intensity = MAX72XX_GetIntensity();
+      const uint8_t cal_intensity = 15 - ad_Value / 166;
+
+      if (cal_intensity != cur_intensity)
+      {
+        MAX72XX_SetIntensity(cal_intensity > 8 ? 8 : cal_intensity);
+      }
     }
 
     osDelay(500);
