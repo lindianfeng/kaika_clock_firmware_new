@@ -237,10 +237,16 @@ void led_display_temp_and_humi(uint8_t temp_int, uint8_t temp_decimals, uint8_t 
   }
 }
 
+static void Clock_SetRunLed(bool b)
+{
+  HAL_GPIO_WritePin(RUN_LED_GPIO_Port, RUN_LED_Pin, b);
+}
+
 static void Clock_Init(void)
 {
   DS3231_Init();
   MAX72XX_Init();
+  Clock_SetRunLed(true);
 }
 
 static bool Clock_UpdateRTC(void)
@@ -305,11 +311,6 @@ static void Clock_UpdateDiplay()
   {
     MAX72XX_UpdateAll();
   }
-}
-
-static void Clock_SetRunLed(bool b)
-{
-  HAL_GPIO_WritePin(RUN_LED_GPIO_Port, RUN_LED_Pin, b);
 }
 
 static void Clock_ShowWelcome(void)
@@ -497,7 +498,7 @@ static inline void TickState(ClockState *s)
     s->callback();
   }
 
-  if (s->repeat != -1 && s->duration)
+  if (s->repeat != -1)
   {
     s->repeat--;
 
@@ -513,7 +514,7 @@ void CallbackGetRTC(void const *argument)
   if (Clock_UpdateRTC())
   {
     SetClockFlag(CLOCK_FLAG_TIME_SECOND_CHANGED);
-    usb_printf("sec changed!\r\n");
+    //usb_printf("sec changed!\r\n");
   }
 }
 
@@ -531,7 +532,7 @@ void CallbackShowDate(void const *argument)
 void CallbackTogglePoint(void const *argument)
 {
   FlipClockFlag(CLOCK_FLAG_FLASH_POINT);
-  Clock_SetRunLed(TestClockFlag(CLOCK_FLAG_FLASH_POINT));
+  //Clock_SetRunLed(TestClockFlag(CLOCK_FLAG_FLASH_POINT));
 }
 
 void StartCheckKeyTask(void const *argument)
@@ -569,7 +570,9 @@ void StartAdcTask(void const *argument)
       ad_Value = HAL_ADC_GetValue(&hadc1);
 
       const uint8_t cur_intensity = MAX72XX_GetIntensity();
-      const uint8_t cal_intensity = 15 - ad_Value / 166;
+      const uint8_t cal_intensity = ad_Value > 2999 ? 0 : 15 - ad_Value / 200;
+
+      //usb_printf("ad_value:%d,cur_intensity:%d,cal_intensity:%d.\r\n", ad_Value, cur_intensity, cal_intensity);
 
       if (cal_intensity != cur_intensity)
       {
@@ -597,6 +600,8 @@ void StartMainTask(void const *argument)
   Clock_ShowWelcome();
 
   DHT11_Init();
+
+  Clock_SetRunLed(false);
 
   clock_s = clock_states[0];
 
@@ -626,6 +631,7 @@ void StartMainTask(void const *argument)
 
     if (clock_s.change_state)
     {
+      //usb_printf("clock_s cur_s:%d,next_s:%d.\r\n",clock_s.state,clock_s.next_state);
       ChangeClockState(&clock_s, clock_s.next_state);
     }
 
