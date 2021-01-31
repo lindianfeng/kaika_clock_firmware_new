@@ -1,22 +1,22 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : usbd_cdc_if.h
-  * @version        : v2.0_Cube
-  * @brief          : Header for usbd_cdc_if.c file.
-  ******************************************************************************
-  * @attention
-  *
-  * <h2><center>&copy; Copyright (c) 2021 STMicroelectronics.
-  * All rights reserved.</center></h2>
-  *
-  * This software component is licensed by ST under Ultimate Liberty license
-  * SLA0044, the "License"; You may not use this file except in compliance with
-  * the License. You may obtain a copy of the License at:
-  *                             www.st.com/SLA0044
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file           : usbd_cdc_if.h
+ * @version        : v2.0_Cube
+ * @brief          : Header for usbd_cdc_if.c file.
+ ******************************************************************************
+ * @attention
+ *
+ * <h2><center>&copy; Copyright (c) 2021 STMicroelectronics.
+ * All rights reserved.</center></h2>
+ *
+ * This software component is licensed by ST under Ultimate Liberty license
+ * SLA0044, the "License"; You may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at:
+ *                             www.st.com/SLA0044
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
@@ -66,7 +66,12 @@
   */
 
 /* USER CODE BEGIN EXPORTED_TYPES */
-
+typedef struct
+{
+  uint8_t volatile usb_data_flag;
+  uint32_t volatile usb_data_len;
+  uint8_t volatile usb_data_buf[100];
+} usb_revice_data_type;
 /* USER CODE END EXPORTED_TYPES */
 
 /**
@@ -95,7 +100,11 @@
 extern USBD_CDC_ItfTypeDef USBD_Interface_fops_FS;
 
 /* USER CODE BEGIN EXPORTED_VARIABLES */
-
+typedef struct
+{
+  uint32_t rxlen;
+  uint32_t flag;
+} vcp_rx_t;
 /* USER CODE END EXPORTED_VARIABLES */
 
 /**

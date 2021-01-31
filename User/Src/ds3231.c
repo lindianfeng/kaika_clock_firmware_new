@@ -14,12 +14,11 @@ extern I2C_HandleTypeDef hi2c1;
 static uint16_t B2D(uint16_t bcd);
 static uint16_t D2B(uint16_t decimal);
 
-RTC_Data rtc = { .Year = 2021, .Month = 1, .Day = 12, .DaysOfWeek = TUESDAY, .Hour = 15, .Min = 56, .Sec = 20 };
+RTC_Data rtc = { .Year = 2021, .Month = 1, .Day = 28, .DaysOfWeek = THURSDAY, .Hour = 16, .Min = 34, .Sec = 20 };
 
 void DS3231_Init()
 {
   DS3231_GetTime(&rtc);
-  //DS3231_SetTime(&rtc);
 }
 
 bool DS3231_GetTime(RTC_Data *rtc)

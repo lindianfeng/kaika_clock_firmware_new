@@ -95,17 +95,6 @@ uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
 uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 
 /* USER CODE BEGIN PRIVATE_VARIABLES */
-typedef struct
-{
-  uint32_t rxlen;
-  uint32_t flag;
-} VcpRx_t;
-
-static VcpRx_t vcp_rx_data =
-    {
-        .rxlen = 0,
-        .flag = 0
-    };
 
 /* USER CODE END PRIVATE_VARIABLES */
 
@@ -121,7 +110,10 @@ static VcpRx_t vcp_rx_data =
 extern USBD_HandleTypeDef hUsbDeviceFS;
 
 /* USER CODE BEGIN EXPORTED_VARIABLES */
-
+vcp_rx_t rx_data_ctr = {
+    .rxlen = 0,
+    .flag = 0
+};
 /* USER CODE END EXPORTED_VARIABLES */
 
 /**
@@ -271,20 +263,17 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t *pbuf, uint16_t length)
 static int8_t CDC_Receive_FS(uint8_t *Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
+  rx_data_ctr.rxlen = rx_data_ctr.rxlen + (*Len);
 
-  vcp_rx_data.rxlen = vcp_rx_data.rxlen + (*Len);
-
-  if (vcp_rx_data.rxlen < APP_RX_DATA_SIZE && UserRxBufferFS[vcp_rx_data.rxlen - 2] != 0x0d
-      && UserRxBufferFS[vcp_rx_data.rxlen - 1] != 0x0a)
+  if (rx_data_ctr.rxlen < APP_RX_DATA_SIZE && UserRxBufferFS[rx_data_ctr.rxlen - 1] != 0x0d)
   {
-    //---继续接收---------------
-    USBD_CDC_SetRxBuffer(&hUsbDeviceFS, UserRxBufferFS + vcp_rx_data.rxlen);
+    USBD_CDC_SetRxBuffer(&hUsbDeviceFS, UserRxBufferFS + rx_data_ctr.rxlen);
     USBD_CDC_ReceivePacket(&hUsbDeviceFS);
   }
   else
   {
-    vcp_rx_data.flag = 1;    //接收完成
-    UserRxBufferFS[vcp_rx_data.rxlen] = 0;   //20201009新增，添加/0，方便打印
+    rx_data_ctr.flag = 1;
+    UserRxBufferFS[rx_data_ctr.rxlen] = 0;
   }
 
   return (USBD_OK);
