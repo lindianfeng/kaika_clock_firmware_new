@@ -11,7 +11,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define SHT_ADDR (0x44)
+#define SHT_ADDR (0x44<<1)
 
 uint8_t sht30_init();
 

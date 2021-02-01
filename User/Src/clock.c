@@ -533,9 +533,12 @@ void CallbackGetSensorData(void const *argument)
   float t = 0;
   float h = 0;
 
-  uint8_t r = sht30_sample(&t,&h);
+  sht30_sample(&t,&h);
 
-  usb_printf("r:%d,t:%d,h:%d \r\n",r,(int)t,(int)h);
+  temp_int = (int)t;
+  temp_deci = t * 10 - temp_int * 10;
+  humi_int = (int)h;
+  //usb_printf("r:%d,t:%d,h:%d \r\n",r,(int)t,(int)h);
 
 }
 
@@ -706,6 +709,7 @@ int main(void)
   SystemClock_Config();
   MX_GPIO_Init();
   MX_I2C1_Init();
+  MX_I2C2_Init();
   MX_SPI1_Init();
   MX_ADC1_Init();
   MX_USB_DEVICE_Init();
