@@ -17,6 +17,7 @@
 #include "key.h"
 #include "delay.h"
 #include "utils.h"
+#include "sht30.h"
 #include "usbd_cdc_if.h"
 
 extern ADC_HandleTypeDef hadc1;
@@ -251,6 +252,7 @@ static void Clock_Init(void)
 {
   DS3231_Init();
   MAX72XX_Init();
+  sht30_init();
   Clock_SetRunLed(true);
 }
 
@@ -519,14 +521,22 @@ void CallbackGetRTC(void const *argument)
   if (Clock_UpdateRTC())
   {
     SetClockFlag(CLOCK_FLAG_TIME_SECOND_CHANGED);
-    //usb_printf("sec changed!\r\n");
+    usb_printf("sec changed!\r\n");
   }
 }
 
 void CallbackGetSensorData(void const *argument)
 {
-  DHT11_ReadData(&temp_int, &temp_deci, &humi_int);
-  SetClockFlag(CLOCK_FLAG_SHOW_TEMP);
+  //DHT11_ReadData(&temp_int, &temp_deci, &humi_int);
+  //SetClockFlag(CLOCK_FLAG_SHOW_TEMP);
+
+  float t = 0;
+  float h = 0;
+
+  uint8_t r = sht30_sample(&t,&h);
+
+  usb_printf("r:%d,t:%d,h:%d \r\n",r,(int)t,(int)h);
+
 }
 
 void CallbackShowDate(void const *argument)
