@@ -527,19 +527,9 @@ void CallbackGetRTC(void const *argument)
 
 void CallbackGetSensorData(void const *argument)
 {
-  //DHT11_ReadData(&temp_int, &temp_deci, &humi_int);
+  DHT11_ReadData(&temp_int, &temp_deci, &humi_int);
   //SetClockFlag(CLOCK_FLAG_SHOW_TEMP);
-
-  float t = 0;
-  float h = 0;
-
-  sht30_sample(&t, &h);
-
-  temp_int = (int) t;
-  temp_deci = t * 10 - temp_int * 10;
-  humi_int = (int) h;
   //usb_printf("r:%d,t:%d,h:%d \r\n",r,(int)t,(int)h);
-
 }
 
 void CallbackShowDate(void const *argument)
