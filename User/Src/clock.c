@@ -533,11 +533,11 @@ void CallbackGetSensorData(void const *argument)
   float t = 0;
   float h = 0;
 
-  sht30_sample(&t,&h);
+  sht30_sample(&t, &h);
 
-  temp_int = (int)t;
+  temp_int = (int) t;
   temp_deci = t * 10 - temp_int * 10;
-  humi_int = (int)h;
+  humi_int = (int) h;
   //usb_printf("r:%d,t:%d,h:%d \r\n",r,(int)t,(int)h);
 
 }
@@ -594,7 +594,7 @@ void StartAdcTask(void const *argument)
 
       if (cal_intensity != cur_intensity)
       {
-        MAX72XX_SetIntensity(cal_intensity > 8 ? 8 : cal_intensity);
+        MAX72XX_SetIntensity(cal_intensity > 5 ? 5 : cal_intensity);
       }
     }
 
@@ -626,7 +626,7 @@ void StartSetRTCTask(void const *argument)
         const uint8_t hour = (UserRxBufferFS[6] - 48) * 10 + (UserRxBufferFS[7] - 48);
         const uint8_t min = (UserRxBufferFS[8] - 48) * 10 + (UserRxBufferFS[9] - 48);
         const uint8_t sec = (UserRxBufferFS[10] - 48) * 10 + (UserRxBufferFS[11] - 48);
-        const uint8_t week = UserRxBufferFS[12] - 48;
+        const uint8_t week = UserRxBufferFS[12] - 48 + 1;
 
         rtc.Year = 2000 + year;
         rtc.Month = month;
